@@ -1,0 +1,324 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: revtalent_db
+    ports:
+      - "3307:3306"
+    networks:
+      - revtalent-network
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 10s
+      retries: 5
+
+  mongodb:
+    image: mongo:7.0
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: revtalent_mongo
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - revtalent-network
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - revtalent-network
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: chromadb
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma-data:/chroma/chroma
+    networks:
+      - revtalent-network
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    networks:
+      - revtalent-network
+
+  eureka-server:
+    build:
+      context: ./eureka-server
+    container_name: eureka-server
+    ports:
+      - "8762:8761"
+    restart: on-failure
+    networks:
+      - revtalent-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8761/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  config-server:
+    build:
+      context: ./config-server
+    container_name: config-server
+    ports:
+      - "8889:8888"
+    restart: on-failure
+    environment:
+      - EUREKA_URL=http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - revtalent-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8888/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "8090:8080"
+    restart: on-failure
+    environment:
+      - EUREKA_URL=http://eureka-server:8761/eureka/
+      - CONFIG_SERVER_URL=http://config-server:8888
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    networks:
+      - revtalent-network
+
+  auth-service:
+    build:
+      context: ./auth-service
+    container_name: auth-service
+    ports:
+      - "8091:8081"
+    restart: on-failure
+    environment:
+      - EUREKA_URL=http://eureka-server:8761/eureka/
+      - CONFIG_SERVER_URL=http://config-server:8888
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/revtalent_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - JWT_SECRET=supersecretkeywhichmustbelongenoughforhmacsha256
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - revtalent-network
+
+  employee-service:
+    build:
+      context: ./employee-service
+    container_name: employee-service
+    ports:
+      - "8092:8082"
+    restart: on-failure
+    environment:
+      - EUREKA_URL=http://eureka-server:8761/eureka/
+      - CONFIG_SERVER_URL=http://config-server:8888
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/revtalent_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - JWT_SECRET=supersecretkeywhichmustbelongenoughforhmacsha256
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - revtalent-network
+
+  leave-service:
+    build:
+      context: ./leave-service
+    container_name: leave-service
+    ports:
+      - "8093:8083"
+    restart: on-failure
+    environment:
+      - EUREKA_URL=http://eureka-server:8761/eureka/
+      - CONFIG_SERVER_URL=http://config-server:8888
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/revtalent_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - JWT_SECRET=supersecretkeywhichmustbelongenoughforhmacsha256
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - revtalent-network
+
+  payroll-service:
+    build:
+      context: ./payroll-service
+    container_name: payroll-service
+    ports:
+      - "8094:8084"
+    restart: on-failure
+    environment:
+      - EUREKA_URL=http://eureka-server:8761/eureka/
+      - CONFIG_SERVER_URL=http://config-server:8888
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/revtalent_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - JWT_SECRET=supersecretkeywhichmustbelongenoughforhmacsha256
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - revtalent-network
+
+  performance-service:
+    build:
+      context: ./performance-service
+    container_name: performance-service
+    ports:
+      - "8095:8085"
+    restart: on-failure
+    environment:
+      - EUREKA_URL=http://eureka-server:8761/eureka/
+      - CONFIG_SERVER_URL=http://config-server:8888
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/revtalent_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - JWT_SECRET=supersecretkeywhichmustbelongenoughforhmacsha256
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - revtalent-network
+
+  recruitment-service:
+    build:
+      context: ./recruitment-service
+    container_name: recruitment-service
+    ports:
+      - "8096:8086"
+    restart: on-failure
+    environment:
+      - EUREKA_URL=http://eureka-server:8761/eureka/
+      - CONFIG_SERVER_URL=http://config-server:8888
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/revtalent_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - JWT_SECRET=supersecretkeywhichmustbelongenoughforhmacsha256
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - revtalent-network
+
+  ai-service:
+    build:
+      context: ./ai-service
+    container_name: ai-service
+    ports:
+      - "8097:8087"
+    restart: on-failure
+    environment:
+      - EUREKA_URL=http://eureka-server:8761/eureka/
+      - CONFIG_SERVER_URL=http://config-server:8888
+      - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/revtalent_mongo
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - CHROMA_BASE_URL=http://chromadb:8000
+      - JWT_SECRET=supersecretkeywhichmustbelongenoughforhmacsha256
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+      chromadb:
+        condition: service_started
+    networks:
+      - revtalent-network
+
+networks:
+  revtalent-network:
+    driver: bridge
+
+volumes:
+  mongo-data:
+  chroma-data:
+  ollama-data:
