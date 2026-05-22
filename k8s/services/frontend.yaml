@@ -23,9 +23,17 @@ kind: Service
 metadata:
   name: frontend
 spec:
+<<<<<<< HEAD
   type: LoadBalancer
   ports:
     - port: 80
       targetPort: 80
+=======
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30000
+>>>>>>> 96fa3fefc2f55b5229144a7e1d00d805344cae09
   selector:
     app: frontend

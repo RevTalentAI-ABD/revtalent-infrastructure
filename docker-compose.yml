@@ -70,6 +70,7 @@ services:
   eureka-server:
     build:
       context: ../eureka-server
+
     container_name: eureka-server
     ports:
       - "8762:8761"
@@ -95,6 +96,7 @@ services:
       - EUREKA_URL=http://eureka-server:8761/eureka/
       - SPRING_PROFILES_ACTIVE=native
       - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:///app/config-repo
+
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -127,6 +129,7 @@ services:
   auth-service:
     build:
       context: ../auth-service
+
     container_name: auth-service
     ports:
       - "8091:8081"
@@ -154,6 +157,7 @@ services:
   employee-service:
     build:
       context: ../employee-service
+
     container_name: employee-service
     ports:
       - "8092:8082"
@@ -181,6 +185,7 @@ services:
   leave-service:
     build:
       context: ../leave-service
+
     container_name: leave-service
     ports:
       - "8093:8083"
@@ -208,6 +213,7 @@ services:
   payroll-service:
     build:
       context: ../payroll-service
+
     container_name: payroll-service
     ports:
       - "8094:8084"
@@ -235,6 +241,7 @@ services:
   performance-service:
     build:
       context: ../performance-service
+
     container_name: performance-service
     ports:
       - "8095:8085"
@@ -247,7 +254,9 @@ services:
       - SPRING_DATASOURCE_PASSWORD=root
       - SPRING_RABBITMQ_HOST=rabbitmq
       - JWT_SECRET=supersecretkeywhichmustbelongenoughforhmacsha256
+
       - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/revtalent_mongo
+
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -265,6 +274,7 @@ services:
   recruitment-service:
     build:
       context: ../recruitment-service
+
     container_name: recruitment-service
     ports:
       - "8096:8086"
@@ -278,6 +288,7 @@ services:
       - SPRING_RABBITMQ_HOST=rabbitmq
       - JWT_SECRET=supersecretkeywhichmustbelongenoughforhmacsha256
       - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/revtalent_mongo
+
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -316,8 +327,10 @@ services:
         condition: service_healthy
       mongodb:
         condition: service_healthy
+
       mysql:
         condition: service_healthy
+
       ollama:
         condition: service_started
       chromadb:
