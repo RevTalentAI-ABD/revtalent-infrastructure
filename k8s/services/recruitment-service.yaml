@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recruitment-service
+spec:
+  selector:
+    matchLabels:
+      app: recruitment-service
+  template:
+    metadata:
+      labels:
+        app: recruitment-service
+    spec:
+      containers:
+        - name: recruitment-service
+          image: revtalent-recruitment-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8086
+          env:
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: http://eureka-server:8761/eureka/
+            - name: CONFIG_SERVER_URL
+              value: http://config-server:8888
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://mysql:3306/revtalent?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: revtalent-secrets
+                  key: db-username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: revtalent-secrets
+                  key: db-password
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: revtalent-secrets
+                  key: jwt-secret
+            - name: SPRING_RABBITMQ_HOST
+              value: rabbitmq
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: recruitment-service
+spec:
+  ports:
+    - port: 8086
+  selector:
+    app: recruitment-service

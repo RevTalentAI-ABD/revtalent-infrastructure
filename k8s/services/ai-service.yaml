@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-service
+spec:
+  selector:
+    matchLabels:
+      app: ai-service
+  template:
+    metadata:
+      labels:
+        app: ai-service
+    spec:
+      containers:
+        - name: ai-service
+          image: revtalent-ai-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8087
+          env:
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: http://eureka-server:8761/eureka/
+            - name: CONFIG_SERVER_URL
+              value: http://config-server:8888
+            - name: SPRING_DATA_MONGODB_URI
+              value: mongodb://mongodb:27017/revtalent_mongo
+            - name: OLLAMA_BASE_URL
+              value: http://ollama:11434
+            - name: CHROMA_BASE_URL
+              value: http://chromadb:8000
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: revtalent-secrets
+                  key: jwt-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-service
+spec:
+  ports:
+    - port: 8087
+  selector:
+    app: ai-service
