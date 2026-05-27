@@ -43,6 +43,11 @@ spec:
                 secretKeyRef:
                   name: revtalent-secrets
                   key: jwt-secret
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: revtalent-secrets
+                  key: smtp-password
             - name: SPRING_RABBITMQ_HOST
               value: rabbitmq
 ---

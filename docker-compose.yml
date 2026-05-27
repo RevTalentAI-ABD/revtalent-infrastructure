@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   mysql:
@@ -142,6 +141,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=root
       - SPRING_RABBITMQ_HOST=rabbitmq
       - JWT_SECRET=supersecretkeywhichmustbelongenoughforhmacsha256
+      - SMTP_PASSWORD=ogeodhty
     depends_on:
       eureka-server:
         condition: service_healthy
