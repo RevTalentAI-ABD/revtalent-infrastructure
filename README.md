@@ -4,7 +4,7 @@ The **Infrastructure Repository** manages the orchestration configs, environment
 
 ---
 
-## 💻 Local Development Orchestration (Docker Compose)
+## Local Development Orchestration (Docker Compose)
 
 The repository provides a pre-configured `docker-compose.yml` file to quickly spin up all microservices and database engines.
 
@@ -39,7 +39,7 @@ docker-compose up -d
 
 ---
 
-## ☸️ Production Deployments (Kubernetes Manifests)
+## Production Deployments (Kubernetes Manifests)
 
 The `k8s/` folder contains structured Kubernetes manifests to provision and scale the environment (e.g. in Azure Kubernetes Services - AKS):
 
